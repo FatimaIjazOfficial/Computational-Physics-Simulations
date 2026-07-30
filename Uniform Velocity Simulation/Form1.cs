@@ -4,7 +4,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Forms;
 
-namespace Radioactive_Decay_Simulation
+namespace Uniform_Velocity_Simulation
 {
     public partial class Form1 : Form
     {
@@ -41,71 +41,60 @@ namespace Radioactive_Decay_Simulation
 
         private void DrawAxes()
         {
-            int margin = 60;
+            int margin = 40;
+
+            int left = margin;
+            int right = picGraph.Width - margin;
+            int top = margin;
+            int bottom = picGraph.Height - margin;
+
+            int centerX = (left + right) / 2;
+            int centerY = (top + bottom) / 2;
 
             using (Pen axisPen = new Pen(Color.Black, 2))
             {
-                // Draw X Axis
-                g.DrawLine(axisPen,
-                    margin,
-                    picGraph.Height - margin,
-                    picGraph.Width - margin,
-                    picGraph.Height - margin);
+                // Horizontal X-axis
+                g.DrawLine(axisPen, left, centerY, right, centerY);
 
-                // Draw Y Axis
-                g.DrawLine(axisPen,
-                    margin,
-                    margin,
-                    margin,
-                    picGraph.Height - margin);
+                // Vertical Y-axis
+                g.DrawLine(axisPen, centerX, top, centerX, bottom);
             }
+
             Font font = new Font("Segoe UI", 9);
 
-            Brush brush = Brushes.Black;
-
-            // Graph Title
             g.DrawString(
-                "Radioactive Decay Simulation",
+                "Uniform Velocity Simulation",
                 new Font("Segoe UI", 14, FontStyle.Bold),
                 Brushes.DarkBlue,
                 picGraph.Width / 2 - 120,
                 10);
 
-            // X Label
-            g.DrawString(
-                "Time",
-                font,
-                brush,
-                picGraph.Width - 70,
-                picGraph.Height - 40);
+            g.DrawString("X", font, Brushes.Black, right - 15, centerY + 10);
 
-            // Y Label
-            g.DrawString(
-                "Atoms (N)",
-                font,
-                brush,
-                5,
-                40);
+            g.DrawString("Y", font, Brushes.Black, centerX + 10, top);
 
-            // Draw Tick Marks
+            // Tick marks
             int ticks = 10;
+
+            float xStep = (right - left) / (float)ticks;
+            float yStep = (bottom - top) / (float)ticks;
 
             for (int i = 0; i <= ticks; i++)
             {
-                float x = margin + i * (picGraph.Width - 2 * margin) / (float)ticks;
+                float x = left + i * xStep;
 
                 g.DrawLine(Pens.Black,
                     x,
-                    picGraph.Height - margin - 5,
+                    centerY - 4,
                     x,
-                    picGraph.Height - margin + 5);
+                    centerY + 4);
 
-                float y = picGraph.Height - margin - i * (picGraph.Height - 2 * margin) / (float)ticks;
+                float y = top + i * yStep;
 
                 g.DrawLine(Pens.Black,
-                    margin - 5,
+                    centerX - 4,
                     y,
-                    margin + 5,
+                    centerX + 4,
                     y);
             }
 
@@ -114,42 +103,49 @@ namespace Radioactive_Decay_Simulation
 
         private void DrawGrid()
         {
-            int margin = 60;
+            int margin = 40;
+
+            int left = margin;
+            int right = picGraph.Width - margin;
+            int top = margin;
+            int bottom = picGraph.Height - margin;
 
             using (Pen gridPen = new Pen(Color.LightGray))
             {
-                gridPen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+                gridPen.DashStyle =
+                    System.Drawing.Drawing2D.DashStyle.Dash;
 
-                int grid = 10;
+                int grid = 20;
 
-                // Vertical grid lines
+                float dx = (right - left) / (float)grid;
+                float dy = (bottom - top) / (float)grid;
+
                 for (int i = 0; i <= grid; i++)
                 {
-                    float x = margin + i * (picGraph.Width - 2 * margin) / (float)grid;
+                    float x = left + i * dx;
 
                     g.DrawLine(
                         gridPen,
                         x,
-                        margin,
+                        top,
                         x,
-                        picGraph.Height - margin);
+                        bottom);
                 }
 
-
-                // Horizontal grid lines
                 for (int i = 0; i <= grid; i++)
                 {
-                    float y = margin + i * (picGraph.Height - 2 * margin) / (float)grid;
+                    float y = top + i * dy;
 
                     g.DrawLine(
                         gridPen,
-                        margin,
+                        left,
                         y,
-                        picGraph.Width - margin,
+                        right,
                         y);
                 }
             }
         }
+
         private void RunSimulation()
         {
             g.Clear(Color.White);
@@ -157,18 +153,15 @@ namespace Radioactive_Decay_Simulation
             DrawGrid();
             DrawAxes();
 
-
-            // Read input values safely
-            double N0;
-            double lambda;
+            double x0;
+            double velocity;
             double dt;
             int iterations;
 
-
-            if (!double.TryParse(txtInitialAtoms.Text, out N0) ||
-                !double.TryParse(txtLambda.Text, out lambda) ||
+            if (!double.TryParse(txtInitialPosition.Text, out x0) ||
+                !double.TryParse(txtVelocity.Text, out velocity) ||
                 !double.TryParse(txtTimeStep.Text, out dt) ||
-                !int.TryParse(txtIterations.Text, out iterations))
+                !int.TryParse(txtSteps.Text, out iterations))
             {
                 MessageBox.Show(
                     "Please enter valid numeric values.",
@@ -179,12 +172,10 @@ namespace Radioactive_Decay_Simulation
                 return;
             }
 
-
-            // Check values
-            if (N0 <= 0 || lambda <= 0 || dt <= 0 || iterations <= 0)
+            if (dt <= 0 || iterations <= 0)
             {
                 MessageBox.Show(
-                    "All values must be greater than zero.",
+                    "Time Step and Iterations must be greater than zero.",
                     "Invalid Input",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
@@ -192,60 +183,42 @@ namespace Radioactive_Decay_Simulation
                 return;
             }
 
-
             int margin = 60;
 
-
-            double N = N0;
             double t = 0;
+            double x = x0;
 
+            double xmax = x0 + velocity * dt * iterations;
 
             float xScale =
                 (picGraph.Width - 2 * margin) /
                 (float)(iterations * dt);
 
-
             float yScale =
                 (picGraph.Height - 2 * margin) /
-                (float)(N0 * 1.2);
+                (float)(Math.Abs(xmax) + 20);
 
+            int centerX = picGraph.Width / 2;
+            int centerY = picGraph.Height / 2;
 
+            PointF previous = new PointF(
+                centerX,
+                centerY - (float)(x * yScale));
 
             using (Pen graphPen = new Pen(Color.Blue, 3))
             {
-
-                PointF previous = new PointF(
-                    margin,
-                    picGraph.Height - margin - (float)(N * yScale)
-                );
-
-
                 for (int i = 1; i <= iterations; i++)
                 {
-
-                    // Euler method for radioactive decay
-                    N = N - lambda * N * dt;
-
                     t += dt;
 
-
+                    x = x0 + velocity * t;
 
                     PointF current = new PointF(
-                        margin + (float)(t * xScale),
-                        picGraph.Height - margin - (float)(N * yScale)
-                    );
+                        centerX + (float)(t * xScale),
+                        centerY - (float)(x * yScale));
 
+                    g.DrawLine(graphPen, previous, current);
 
-
-                    // Draw decay curve
-                    g.DrawLine(
-                        graphPen,
-                        previous,
-                        current);
-
-
-
-                    // Draw data points
                     g.FillEllipse(
                         Brushes.Red,
                         current.X - 2,
@@ -253,19 +226,13 @@ namespace Radioactive_Decay_Simulation
                         4,
                         4);
 
-
-
                     previous = current;
                 }
-
             }
-
 
             picGraph.Refresh();
 
-
-            toolStripStatusLabel1.Text =
-                "Simulation completed.";
+            toolStripStatusLabel1.Text = "Simulation completed.";
         }
 
         private void ClearGraph()
@@ -299,10 +266,10 @@ namespace Radioactive_Decay_Simulation
                 MessageBoxIcon.Question) == DialogResult.No)
                 return;
 
-            txtInitialAtoms.Text = "150";
-            txtLambda.Text = "0.5";
+            txtInitialPosition.Text = "0";
+            txtVelocity.Text = "20";
             txtTimeStep.Text = "0.1";
-            txtIterations.Text = "150";
+            txtSteps.Text = "150";
 
             ClearGraph();
 
@@ -315,7 +282,7 @@ namespace Radioactive_Decay_Simulation
             {
                 string path = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                    "Radioactive_Decay.png");
+                    "UniformVelocity.png");
 
                 bmp.Save(path, ImageFormat.Png);
 
@@ -333,28 +300,23 @@ namespace Radioactive_Decay_Simulation
             {
                 string path = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                    "RadioactiveDecay.csv");
+                    "UniformVelocity.csv");
 
-                double N0 = double.Parse(txtInitialAtoms.Text);
-                double lambda = double.Parse(txtLambda.Text);
+                double x0 = double.Parse(txtInitialPosition.Text);
+                double velocity = double.Parse(txtVelocity.Text);
                 double dt = double.Parse(txtTimeStep.Text);
-                int iterations = int.Parse(txtIterations.Text);
+                int steps = int.Parse(txtSteps.Text);
 
                 using (StreamWriter sw = new StreamWriter(path))
                 {
-                    sw.WriteLine("Iteration,Time,Atoms");
+                    sw.WriteLine("Step,Time,Position");
 
-                    double t = 0;
-                    double N = N0;
-
-                    sw.WriteLine($"0,{t},{N}");
-
-                    for (int i = 1; i <= iterations; i++)
+                    for (int i = 0; i <= steps; i++)
                     {
-                        t += dt;
-                        N = N - lambda * N * dt;
+                        double t = i * dt;
+                        double x = x0 + velocity * t;
 
-                        sw.WriteLine($"{i},{t},{N}");
+                        sw.WriteLine($"{i},{t},{x}");
                     }
                 }
 
@@ -372,13 +334,12 @@ namespace Radioactive_Decay_Simulation
             {
                 RunSimulation();
                 toolStripStatusLabel1.Text = "Simulation completed.";
-
             }
-            catch
+            catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Please enter valid numeric values.",
-                    "Input Error",
+                    ex.Message,
+                    "Simulation Error",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
@@ -417,5 +378,6 @@ namespace Radioactive_Decay_Simulation
             toolStripStatusLabel1.Text =
                 $"X = {e.X}     Y = {e.Y}";
         }
+       
     }
 }

@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36616.10 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Uniform Velocity Simulation", "Uniform Velocity Simulation.csproj", "{5915BE00-EC76-40FC-A02C-4602FE580991}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5915BE00-EC76-40FC-A02C-4602FE580991}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5915BE00-EC76-40FC-A02C-4602FE580991}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5915BE00-EC76-40FC-A02C-4602FE580991}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5915BE00-EC76-40FC-A02C-4602FE580991}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EFDB5D6F-4FD4-4D33-8974-93FC25EFE556}
+	EndGlobalSection
+EndGlobal
