@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Forms;
@@ -11,19 +12,18 @@ namespace Radioactive_Decay_Simulation
         private Bitmap bmp;
         private Graphics g;
 
+        private const int GraphMargin = 60;
+
         public Form1()
         {
             InitializeComponent();
-
-            this.DoubleBuffered = true;
-
-            this.Load += Form1_Load;
+            DoubleBuffered = true;
+            Load += Form1_Load;
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             InitializeGraph();
-
             toolStripStatusLabel1.Text = "Ready";
         }
 
@@ -31,144 +31,32 @@ namespace Radioactive_Decay_Simulation
         {
             bmp = new Bitmap(picGraph.Width, picGraph.Height);
             g = Graphics.FromImage(bmp);
-
-            g.Clear(Color.White);
-
             picGraph.Image = bmp;
-
-            DrawAxes();
+            ClearCanvas();
         }
 
-        private void DrawAxes()
+        private void ClearCanvas()
         {
-            int margin = 60;
-
-            using (Pen axisPen = new Pen(Color.Black, 2))
-            {
-                // Draw X Axis
-                g.DrawLine(axisPen,
-                    margin,
-                    picGraph.Height - margin,
-                    picGraph.Width - margin,
-                    picGraph.Height - margin);
-
-                // Draw Y Axis
-                g.DrawLine(axisPen,
-                    margin,
-                    margin,
-                    margin,
-                    picGraph.Height - margin);
-            }
-            Font font = new Font("Segoe UI", 9);
-
-            Brush brush = Brushes.Black;
-
-            // Graph Title
-            g.DrawString(
-                "Radioactive Decay Simulation",
-                new Font("Segoe UI", 14, FontStyle.Bold),
-                Brushes.DarkBlue,
-                picGraph.Width / 2 - 120,
-                10);
-
-            // X Label
-            g.DrawString(
-                "Time",
-                font,
-                brush,
-                picGraph.Width - 70,
-                picGraph.Height - 40);
-
-            // Y Label
-            g.DrawString(
-                "Atoms (N)",
-                font,
-                brush,
-                5,
-                40);
-
-            // Draw Tick Marks
-            int ticks = 10;
-
-            for (int i = 0; i <= ticks; i++)
-            {
-                float x = margin + i * (picGraph.Width - 2 * margin) / (float)ticks;
-
-                g.DrawLine(Pens.Black,
-                    x,
-                    picGraph.Height - margin - 5,
-                    x,
-                    picGraph.Height - margin + 5);
-
-                float y = picGraph.Height - margin - i * (picGraph.Height - 2 * margin) / (float)ticks;
-
-                g.DrawLine(Pens.Black,
-                    margin - 5,
-                    y,
-                    margin + 5,
-                    y);
-            }
-
+            g.Clear(Color.White);
+            DrawGrid();
+            DrawAxes();
             picGraph.Refresh();
         }
 
-        private void DrawGrid()
+        private bool ReadInputs(out double N0, out double lambda, out double dt, out int iterations)
         {
-            int margin = 60;
+            N0 = 0;
+            lambda = 0;
+            dt = 0;
+            iterations = 0;
 
-            using (Pen gridPen = new Pen(Color.LightGray))
-            {
-                gridPen.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+            bool valid =
+                double.TryParse(txtInitialAtoms.Text, out N0) &
+                double.TryParse(txtLambda.Text, out lambda) &
+                double.TryParse(txtTimeStep.Text, out dt) &
+                int.TryParse(txtIterations.Text, out iterations);
 
-                int grid = 10;
-
-                // Vertical grid lines
-                for (int i = 0; i <= grid; i++)
-                {
-                    float x = margin + i * (picGraph.Width - 2 * margin) / (float)grid;
-
-                    g.DrawLine(
-                        gridPen,
-                        x,
-                        margin,
-                        x,
-                        picGraph.Height - margin);
-                }
-
-
-                // Horizontal grid lines
-                for (int i = 0; i <= grid; i++)
-                {
-                    float y = margin + i * (picGraph.Height - 2 * margin) / (float)grid;
-
-                    g.DrawLine(
-                        gridPen,
-                        margin,
-                        y,
-                        picGraph.Width - margin,
-                        y);
-                }
-            }
-        }
-        private void RunSimulation()
-        {
-            g.Clear(Color.White);
-
-            DrawGrid();
-            DrawAxes();
-
-
-            // Read input values safely
-            double N0;
-            double lambda;
-            double dt;
-            int iterations;
-
-
-            if (!double.TryParse(txtInitialAtoms.Text, out N0) ||
-                !double.TryParse(txtLambda.Text, out lambda) ||
-                !double.TryParse(txtTimeStep.Text, out dt) ||
-                !int.TryParse(txtIterations.Text, out iterations))
+            if (!valid)
             {
                 MessageBox.Show(
                     "Please enter valid numeric values.",
@@ -176,11 +64,9 @@ namespace Radioactive_Decay_Simulation
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
 
-                return;
+                return false;
             }
 
-
-            // Check values
             if (N0 <= 0 || lambda <= 0 || dt <= 0 || iterations <= 0)
             {
                 MessageBox.Show(
@@ -189,83 +75,199 @@ namespace Radioactive_Decay_Simulation
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
 
-                return;
+                return false;
             }
 
+            return true;
+        }
 
-            int margin = 60;
+        private void CalculateDecay(
+            double[] N,
+            double[] t,
+            double lambda,
+            double dt,
+            int iterations)
+        {
+            for (int i = 0; i < iterations; i++)
+            {
+                N[i + 1] = N[i] - lambda * N[i] * dt;
+                t[i + 1] = t[i] + dt;
+            }
+        }
 
+        private void DrawAxes()
+        {
+            using (Pen axisPen = new Pen(Color.Black, 2))
+            {
+                g.DrawLine(
+                    axisPen,
+                    GraphMargin,
+                    picGraph.Height - GraphMargin,
+                    picGraph.Width - GraphMargin,
+                    picGraph.Height - GraphMargin);
 
-            double N = N0;
-            double t = 0;
+                g.DrawLine(
+                    axisPen,
+                    GraphMargin,
+                    GraphMargin,
+                    GraphMargin,
+                    picGraph.Height - GraphMargin);
+            }
 
+            Font font = new Font("Segoe UI", 9);
 
+            g.DrawString(
+                "Radioactive Decay Simulation",
+                new Font("Segoe UI", 14, FontStyle.Bold),
+                Brushes.DarkBlue,
+                picGraph.Width / 2 - 120,
+                10);
+
+            g.DrawString(
+                "Time",
+                font,
+                Brushes.Black,
+                picGraph.Width - 70,
+                picGraph.Height - 40);
+
+            g.DrawString(
+                "Atoms (N)",
+                font,
+                Brushes.Black,
+                5,
+                40);
+
+            for (int i = 0; i <= 10; i++)
+            {
+                float x = GraphMargin + i * (picGraph.Width - 2 * GraphMargin) / 10f;
+
+                g.DrawLine(
+                    Pens.Black,
+                    x,
+                    picGraph.Height - GraphMargin - 5,
+                    x,
+                    picGraph.Height - GraphMargin + 5);
+
+                float y = picGraph.Height - GraphMargin - i * (picGraph.Height - 2 * GraphMargin) / 10f;
+
+                g.DrawLine(
+                    Pens.Black,
+                    GraphMargin - 5,
+                    y,
+                    GraphMargin + 5,
+                    y);
+            }
+        }
+
+        private void DrawGrid()
+        {
+            using (Pen gridPen = new Pen(Color.LightGray))
+            {
+                gridPen.DashStyle = DashStyle.Dash;
+
+                for (int i = 0; i <= 10; i++)
+                {
+                    float x = GraphMargin + i * (picGraph.Width - 2 * GraphMargin) / 10f;
+
+                    g.DrawLine(
+                        gridPen,
+                        x,
+                        GraphMargin,
+                        x,
+                        picGraph.Height - GraphMargin);
+                }
+
+                for (int i = 0; i <= 10; i++)
+                {
+                    float y = GraphMargin + i * (picGraph.Height - 2 * GraphMargin) / 10f;
+
+                    g.DrawLine(
+                        gridPen,
+                        GraphMargin,
+                        y,
+                        picGraph.Width - GraphMargin,
+                        y);
+                }
+            }
+        }
+
+        private void RunSimulation()
+        {
+            double N0;
+            double lambda;
+            double dt;
+            int iterations;
+
+            if (!ReadInputs(out N0, out lambda, out dt, out iterations))
+                return;
+
+            ClearCanvas();
+
+            double[] N = new double[iterations + 1];
+            double[] t = new double[iterations + 1];
+
+            N[0] = N0;
+            t[0] = 0;
+
+            CalculateDecay(
+                N,
+                t,
+                lambda,
+                dt,
+                iterations);
+
+            DrawGraph(
+                N,
+                t,
+                N0,
+                iterations,
+                dt);
+
+            toolStripStatusLabel1.Text = "Simulation completed.";
+        }
+
+        private void DrawGraph(
+            double[] N,
+            double[] t,
+            double N0,
+            int iterations,
+            double dt)
+        {
             float xScale =
-                (picGraph.Width - 2 * margin) /
+                (picGraph.Width - 2 * GraphMargin) /
                 (float)(iterations * dt);
 
-
             float yScale =
-                (picGraph.Height - 2 * margin) /
+                (picGraph.Height - 2 * GraphMargin) /
                 (float)(N0 * 1.2);
-
-
 
             using (Pen graphPen = new Pen(Color.Blue, 3))
             {
-
-                PointF previous = new PointF(
-                    margin,
-                    picGraph.Height - margin - (float)(N * yScale)
-                );
-
-
-                for (int i = 1; i <= iterations; i++)
+                for (int i = 0; i < iterations; i++)
                 {
+                    PointF p1 = new PointF(
+                        GraphMargin + (float)(t[i] * xScale),
+                        picGraph.Height - GraphMargin - (float)(N[i] * yScale));
 
-                    // Euler method for radioactive decay
-                    N = N - lambda * N * dt;
+                    PointF p2 = new PointF(
+                        GraphMargin + (float)(t[i + 1] * xScale),
+                        picGraph.Height - GraphMargin - (float)(N[i + 1] * yScale));
 
-                    t += dt;
-
-
-
-                    PointF current = new PointF(
-                        margin + (float)(t * xScale),
-                        picGraph.Height - margin - (float)(N * yScale)
-                    );
-
-
-
-                    // Draw decay curve
                     g.DrawLine(
                         graphPen,
-                        previous,
-                        current);
+                        p1,
+                        p2);
 
-
-
-                    // Draw data points
                     g.FillEllipse(
                         Brushes.Red,
-                        current.X - 2,
-                        current.Y - 2,
+                        p2.X - 2,
+                        p2.Y - 2,
                         4,
                         4);
-
-
-
-                    previous = current;
                 }
-
             }
 
-
             picGraph.Refresh();
-
-
-            toolStripStatusLabel1.Text =
-                "Simulation completed.";
         }
 
         private void ClearGraph()
@@ -277,15 +279,7 @@ namespace Radioactive_Decay_Simulation
                 MessageBoxIcon.Question) == DialogResult.No)
                 return;
 
-            g.Clear(Color.White);
-
-            DrawGrid();
-
-            DrawAxes();
-
-            picGraph.Image = bmp;
-
-            picGraph.Refresh();
+            ClearCanvas();
 
             toolStripStatusLabel1.Text = "Graph cleared.";
         }
@@ -304,7 +298,7 @@ namespace Radioactive_Decay_Simulation
             txtTimeStep.Text = "0.1";
             txtIterations.Text = "150";
 
-            ClearGraph();
+            ClearCanvas();
 
             toolStripStatusLabel1.Text = "Parameters reset.";
         }
@@ -319,11 +313,14 @@ namespace Radioactive_Decay_Simulation
 
                 bmp.Save(path, ImageFormat.Png);
 
-                MessageBox.Show("Saved successfully to:\n" + path);
+                MessageBox.Show(
+                    "Saved successfully to:\n" + path);
+
+                toolStripStatusLabel1.Text = "Graph saved.";
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.ToString());
+                MessageBox.Show(ex.Message);
             }
         }
 
@@ -331,85 +328,76 @@ namespace Radioactive_Decay_Simulation
         {
             try
             {
+                double N0;
+                double lambda;
+                double dt;
+                int iterations;
+
+                if (!ReadInputs(out N0, out lambda, out dt, out iterations))
+                    return;
+
+                double[] N = new double[iterations + 1];
+                double[] t = new double[iterations + 1];
+
+                N[0] = N0;
+                t[0] = 0;
+
+                CalculateDecay(
+                    N,
+                    t,
+                    lambda,
+                    dt,
+                    iterations);
+
                 string path = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
                     "RadioactiveDecay.csv");
-
-                double N0 = double.Parse(txtInitialAtoms.Text);
-                double lambda = double.Parse(txtLambda.Text);
-                double dt = double.Parse(txtTimeStep.Text);
-                int iterations = int.Parse(txtIterations.Text);
 
                 using (StreamWriter sw = new StreamWriter(path))
                 {
                     sw.WriteLine("Iteration,Time,Atoms");
 
-                    double t = 0;
-                    double N = N0;
-
-                    sw.WriteLine($"0,{t},{N}");
-
-                    for (int i = 1; i <= iterations; i++)
+                    for (int i = 0; i <= iterations; i++)
                     {
-                        t += dt;
-                        N = N - lambda * N * dt;
-
-                        sw.WriteLine($"{i},{t},{N}");
+                        sw.WriteLine(
+                            $"{i},{t[i]},{N[i]}");
                     }
                 }
 
-                MessageBox.Show("CSV saved successfully to:\n" + path);
+                MessageBox.Show(
+                    "CSV saved successfully to:\n" + path);
+
+                toolStripStatusLabel1.Text = "CSV exported.";
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.ToString());
+                MessageBox.Show(ex.Message);
             }
         }
 
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
-            try
-            {
-                RunSimulation();
-                toolStripStatusLabel1.Text = "Simulation completed.";
-
-            }
-            catch
-            {
-                MessageBox.Show(
-                    "Please enter valid numeric values.",
-                    "Input Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
+            RunSimulation();
         }
 
         private void toolStripButton2_Click(object sender, EventArgs e)
         {
             ClearGraph();
-            toolStripStatusLabel1.Text = "Graph cleared.";
-
         }
 
         private void toolStripButton3_Click(object sender, EventArgs e)
         {
             ResetParameters();
-            toolStripStatusLabel1.Text = "Parameters reset.";
-
         }
 
         private void toolStripButton4_Click(object sender, EventArgs e)
         {
             SaveGraph();
-            toolStripStatusLabel1.Text = "Graph saved.";
-
         }
 
         private void toolStripButton5_Click(object sender, EventArgs e)
         {
             ExportCSV();
-            toolStripStatusLabel1.Text = "CSV exported.";
-
         }
 
         private void picGraph_MouseMove(object sender, MouseEventArgs e)

@@ -144,7 +144,7 @@
             this.txtVelocity.Name = "txtVelocity";
             this.txtVelocity.Size = new System.Drawing.Size(70, 20);
             this.txtVelocity.TabIndex = 2;
-            this.txtVelocity.Text = "50";
+            this.txtVelocity.Text = "0";
             // 
             // labelGravity
             // 
@@ -162,7 +162,7 @@
             this.txtGravity.Name = "txtGravity";
             this.txtGravity.Size = new System.Drawing.Size(70, 20);
             this.txtGravity.TabIndex = 4;
-            this.txtGravity.Text = "9.8";
+            this.txtGravity.Text = "10";
             // 
             // labelDrag
             // 
@@ -216,7 +216,7 @@
             this.txtSteps.Name = "txtSteps";
             this.txtSteps.Size = new System.Drawing.Size(70, 20);
             this.txtSteps.TabIndex = 10;
-            this.txtSteps.Text = "150";
+            this.txtSteps.Text = "200";
             // 
             // statusStrip1
             // 

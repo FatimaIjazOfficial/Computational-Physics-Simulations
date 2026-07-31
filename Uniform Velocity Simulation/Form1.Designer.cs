@@ -178,7 +178,7 @@
             this.txtSteps.Name = "txtSteps";
             this.txtSteps.Size = new System.Drawing.Size(72, 20);
             this.txtSteps.TabIndex = 6;
-            this.txtSteps.Text = "100";
+            this.txtSteps.Text = "150";
             // 
             // label4
             // 
@@ -214,7 +214,7 @@
             this.txtVelocity.Name = "txtVelocity";
             this.txtVelocity.Size = new System.Drawing.Size(72, 20);
             this.txtVelocity.TabIndex = 3;
-            this.txtVelocity.Text = "20";
+            this.txtVelocity.Text = "40";
             // 
             // label2
             // 
