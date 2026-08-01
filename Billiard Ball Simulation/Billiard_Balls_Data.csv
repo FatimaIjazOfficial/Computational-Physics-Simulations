@@ -1,0 +1,4 @@
+Ball,X,Y,Vx,Vy,CurrentSteps,MaxSteps,Status
+Ball 1,230.00,228.00,5.00,4.00,1274,1274,Stopped
+Ball 2,682.00,348.00,1.00,-2.00,1065,1065,Stopped
+Ball 3,740.00,420.00,-5.00,4.00,1006,1006,Stopped
